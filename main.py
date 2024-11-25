@@ -62,6 +62,14 @@ class ChatbotGUI:
         
         self.process_input(user_input)
 
+    def display_top_match(self, user_input):
+        if user_input.lower() == 'quit':
+            self.root.quit()
+            return        
+
+        top_matches = get_top_matches(user_input, self.index)
+        self.display_message(f"Bot: {top_matches}")
+
     def process_input(self, user_input):
         if user_input.lower() == 'quit':
             self.root.quit()
@@ -80,7 +88,7 @@ class ChatbotGUI:
         recommendation = generate_personalized_recommendation(
             user_input, best_match, sentiment
         )
-        
+        self.display_message(f"Bot: {top_matches}")
         self.display_message(f"Bot: {recommendation}")
 
     def display_message(self, message):

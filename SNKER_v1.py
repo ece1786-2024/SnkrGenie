@@ -1,12 +1,14 @@
 from transformers import pipeline
 from openai import OpenAI
-
+import os
 # Initialize sentiment analysis model
 sentiment_analyzer = pipeline("text-classification", 
                             model="finiteautomata/bertweet-base-sentiment-analysis")
 
+api_key = os.getenv("OPENAI_API_KEY")
+
 # Initialize OpenAI API
-client = OpenAI(api_key="")
+client = OpenAI(api_key=api_key)
 
 system_prompt = (
     "You are a knowledgeable sneaker salesperson. When making recommendations:"

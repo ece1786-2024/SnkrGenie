@@ -5,11 +5,11 @@ from llama_index.core.settings import Settings
 from openai import OpenAI
 import json
 from llama_index.core.vector_stores import MetadataFilters
-
+import os
 def initialize_index():
     """Initialize and return the index"""
     # Read CSV file
-    df = pd.read_csv('t1_new205.csv')
+    df = pd.read_csv('t1_finished.csv')
 
     # Build document collection
     documents = []
@@ -44,7 +44,8 @@ def initialize_index():
 
 def extract_preferences_with_gpt(query):
     """Extract color and category preferences from query using GPT-4"""
-    client = OpenAI(api_key="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")
+    api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=api_key)
     
     system_prompt = """
     You are an AI assistant specialized in analyzing shoe shopping queries. 
