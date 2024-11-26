@@ -78,7 +78,7 @@ class ChatbotGUI:
         sentiment = analyze_sentiment(user_input)
         
 
-        top_matches = get_top_matches(user_input, self.index)
+        top_matches = get_top_matches(user_input,"", self.index)
         
         if not top_matches:
             self.display_message("Bot: Sorry, I couldn't find any matching sneakers.")

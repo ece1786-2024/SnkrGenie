@@ -30,7 +30,7 @@ def generate_personalized_recommendation(user_input, sneaker_info, sentiment):
     prompt = (
         f"User original input: {user_input}\n"
         f"User sentiment: {sentiment}\n"
-        f"Sneaker details: Name: {sneaker_info['name']}, "
+        f"Sneaker details: Name: {sneaker_info['ame']}, "
         f"Description: {sneaker_info['description']}, "
         f"Color: {sneaker_info['color']}, "
         f"Category: {sneaker_info['category']}\n"

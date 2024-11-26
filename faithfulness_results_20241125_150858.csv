@@ -1,0 +1,4 @@
+scenario,query,faithfulness_score,reason
+Activity/Purpose Based,1. I need something comfortable for walking around the city all day,0.95,"The score is 0.95 because the actual output incorrectly states the colorway of the Vans Authentic Golden Coast Black White as Black/White Checkerboard, which is not specified in the retrieval context."
+Activity/Purpose Based,2. Looking for shoes that I can wear both at the gym and casual outings,1.0,The score is 1.00 because there are no contradictions present between the actual output and the retrieval context. Good job!
+Activity/Purpose Based,3. Need something for my daily morning jogs,1.0,"The score is 1.00 because there are no contradictions, indicating that the actual output perfectly aligns with the information presented in the retrieval context."

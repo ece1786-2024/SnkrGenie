@@ -1,47 +1,279 @@
-from deepeval.metrics import ContextualPrecisionMetric
-from deepeval.test_case import LLMTestCase
+import sys
+import json
+from openai import OpenAI
+from LLama_index import initialize_index, get_top_matches
+from SNKER_v1 import analyze_sentiment, generate_personalized_recommendation
+from typing import Dict, List, Tuple
+import pandas as pd
+from datetime import datetime
+import os
+# Initialize OpenAI client
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
 
-# faithfulness_metric = FaithfulnessMetric()
-test_case = LLMTestCase(
-    input="My current running shoes are pretty beat up and I'm looking for a new pair, but I have a problem with some running shoes. I usually wear shoes with good arch (normal, and I find Nike perfect), and stable midsole. They should have balance and midsole durability. By durability I mean those that not lean to one side over time. I have this problem with my right foot. (only model this did not happen was Pegasus 39). So anyone have any advice/suggestion on what I should pic (recommand a few because some maynot be available here). ",
-    actual_output="""
-Hey there! It sounds like you're on the hunt for a running shoe that offers excellent arch support, stability, and durability—especially on that right foot. Given your needs, the Nike ZoomX Invincible Run 3 in White Cobalt Bliss could be a perfect fit for you. I would like cushioning and lightweight features.
-This shoe is all about providing stability and comfort that lasts. Its design includes a wider midsole made from ZoomX foam, which is incredibly responsive and helps return energy with every step. This feature not only enhances your running efficiency but also contributes to maintaining a balanced stride, addressing your concern about shoes leaning to one side over time.
-The smaller heel clip in this model adds subtle structure and support without compromising its streamlined look, helping to keep your foot stable. Plus, the rubber outsole with its lattice pattern is designed to allow the foam to expand and react dynamically, giving you a reliable grip and further promoting durability.
+def create_customer_agent():
+    """Create customeragent prompt"""
+    system_prompt = """
+    You are a customer looking for sneakers. Your task is to evaluate if the salesperson's recommendation fully addresses your initial requirements.
 
-The breathable Flyknit upper ensures your foot stays comfortable, even during tough runs, which is especially nice if you're logging those extra miles. With the Invincible Run 3, you'll find that the combination of cushioning, support, and durability is crafted to keep you running comfortably without the worry of uneven wear.
-Hope this helps, and happy running with your new kicks!
-""",
-    expected_output="""Nike Structure
-Air Max 270
-Invincible Run 3 """,
-retrieval_context=[
+    Evaluation rules:
+    1. Carefully compare the recommendation against your initial requirements
+    2. Consider the recommendation satisfactory ONLY IF it addresses ALL aspects of your initial requirements
+    3. If ALL requirements are met:
+       - Set "satisfied" to true
+       - Set "end_conversation" to true
+       - Express satisfaction in your response
+    4. If ANY requirement is not addressed:
+       - Set "satisfied" to false
+       - Set "end_conversation" to false
+       - In your response, clearly state which requirements were not met
+    5. Maximum 3 conversation turns
+
+    Return response in JSON format:
+    {
+        "satisfied": true/false,
+        "response": "your response",
+        "end_conversation": true/false,
+        "requirements_met": ["list of met requirements"],
+        "requirements_missing": ["list of unmet requirements"]
+    }
+
+    Example:
+    If initial request was "comfortable for walking and stylish", and recommendation only addresses comfort,
+    you should identify that style was not addressed and request more information about style aspects.
     """
-232,Nike ZoomX Invincible Run 3 Black White,"The Nike ZoomX Invincible Run 3 Black White is part of the Nike ZoomX Invincible Run 3 lineup of running shoes. Although the colorway is Black, White, Dark Grey, and Coconut Milk, the Invincible Run 3 Black White presents as a dual-tone black and white sneaker.
-This sneaker stands out from others due to the amount of cushioning underfoot. ZoomX foam cushioning in the midsole conforms to the foot shape and added foam height provides a soft underfoot feel. The lightweight Flyknit upper is both breathable and durable. In terms of branding, a Swoosh made of stripes graces the side panel, another Swoosh covers the vamp, and lettering along the heel spells out ‘NIKE INVINCIBLE RUN 3’. In addition, the midsole features an orange rectangle with Nike ZoomX foam branding.
-What do our StockX experts love about this sneaker? It is comparatively light weighing approximately 310 grams. The Nike ZoomX Invincible Run 3 Black White was released on January 5, 2023, and retailed at $180.",Black/White-Dark Grey-White-Coconut Milk,Black,Running,180,Nike
-"""
-]
-#     retrieval_context=[
-#     {
-#         "name": "Nike ZoomX Invincible Run 3 White Cobalt Bliss",
-#         "description": "The Nike Invincible Run 3 White Cobalt Bliss updates the Invincible Run silhouette, adding even more stability and raising the bar on comfort and cushioning for every stride, all packaged in a sleeker design.\n\nThe upper of the White Cobalt Bliss Nike Invincible Run 3 sports a white Flyknit upper with breathability zones placed where your foot heats up the most to provide maximum comfort. A smaller heel clip than on previous Invincible iterations provides structure and support in a more streamlined design. An ice blue mud guard sports a tonal embossed Nike swoosh that matches the one on the heel. A black heel tab compliments a black striped Nike swoosh on the quarter panel and a solid black Nike swoosh on the toe box. This upper gets springy support from a wider midsole composed of cream-colored Zoom X foam that returns energy with every step.\n\nWhat we appreciate most about this high-octane running shoe is the black rubber outsole interwoven with hits of blue. The lattice pattern allows the foam to expand and react to empower your stride. The Nike Invincible Run 3 White Cobalt Bliss was released on January 5, 2023 for $180 retail.",
-#         "color": "White",
-#         "category": "Running",
-#         "similarity_score": 0.5254333341680794,
-#         "colorway": "White/Black-Football Grey-Cobalt Bliss-Pink Spell",
-#         "release_date": "January 5, 2023",
-#         "price": 180
-#     }
-# ]
-)
+    return system_prompt
 
-metric = ContextualPrecisionMetric(threshold=0.5)
-# metric2 = FaithfulnessMetric()
-metric.measure(test_case)
+def evaluate_conversation(initial_query, recommendation):
+    """Evaluate the conversation"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": create_customer_agent()},
+                {"role": "user", "content": f"Initial requirement: {initial_query}\nSalesperson recommendation: {recommendation}"}
+            ],
+            response_format={ "type": "json_object" }
+        )
+        
+        # Parse the response
+        evaluation = json.loads(response.choices[0].message.content)
+        
+        # # Print the conversation details
+        # print("\n=== Conversation Turn ===")
+        # print(f"Customer's initial request: {initial_query}")
+        # print(f"Salesperson's recommendation: {recommendation}")
+        # print(f"Customer's response: {evaluation['response']}")
+        # print(f"Customer satisfied: {'Yes' if evaluation['satisfied'] else 'No'}")
+        # print(f"End conversation: {'Yes' if evaluation['end_conversation'] else 'No'}")
+        # print("=====================\n")
+        
+        return evaluation
+    except Exception as e:
+        print(f"Evaluation error: {e}")
+        return None
+    
+def read_test_cases_by_scenario(filename: str) -> Dict[str, List[str]]:
+    """Read test cases from file and organize them by scenario"""
+    scenarios = {}
+    current_scenario = None
+    
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('#'):
+                # New scenario found
+                current_scenario = line.replace('#', '').strip()
+                scenarios[current_scenario] = []
+            elif current_scenario and line[0].isdigit():
+                # Remove the numbering (e.g., "1. ") from the line
+                test_case = line[line.find(' ')+1:].strip()
+                scenarios[current_scenario].append(test_case)
+    
+    return scenarios
 
-# Print results
-print("Precision Score:", metric.score)
-print("Reason:", metric.reason)
-print("Is Successful:", metric.is_successful())
+def run_test_case(query, index):
+    """Run a single test case"""
+    conversation_history = []
+    max_turns = 3
+    current_turn = 0
+    current_query = query
+    
+    while current_turn < max_turns:
+        # Get recommendations
+        top_matches, summary, flag = get_top_matches(current_query, " ".join(conversation_history), index)
+        if not top_matches:
+            return False, current_turn + 1
+            
+        # Generate recommendation response
+        sentiment = analyze_sentiment(current_query)
+        recommendation = generate_personalized_recommendation(summary, top_matches[0], sentiment)
+        
+        # Evaluate recommendation
+        evaluation = evaluate_conversation(query, recommendation)
+        if evaluation is None:
+            return False, current_turn + 1
+            
+        conversation_history.append(current_query)
+        
+        if evaluation['satisfied'] or evaluation['end_conversation']:
+            return True, current_turn + 1
+            
+        current_query = evaluation['response']
+        current_turn += 1
+    
+    return False, max_turns
 
+
+def create_evaluator_agent():
+    """Create the evaluator system prompt"""
+    system_prompt = """
+    You are a professional recommendation system evaluator. Please evaluate the system's responses 
+    across the following dimensions:
+    
+    1. Relevance: How well the recommendation matches user needs (1-5 points)
+    2. Completeness: Whether all user requirements are addressed (1-5 points)
+    3. Personalization: Level of recommendation personalization (1-5 points)
+    4. Expertise: Level of product knowledge demonstrated (1-5 points)
+    5. Language: Clarity and naturalness of expression (1-5 points)
+    
+    Return evaluation in JSON format:
+    {
+        "scores": {
+            "relevance": float,
+            "completeness": float,
+            "personalization": float,
+            "expertise": float,
+            "language": float,
+            "average": float
+        },
+        "analysis": {
+            "strengths": ["strength1", "strength2"...],
+            "weaknesses": ["weakness1", "weakness2"...],
+            "suggestions": ["suggestion1", "suggestion2"...]
+        }
+    }
+    """
+    return system_prompt
+
+def g_evaluate(query: str, recommendation: str) -> Dict:
+    """Perform G-Evaluation assessment"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": create_evaluator_agent()},
+                {"role": "user", "content": f"User Query: {query}\nSystem Recommendation: {recommendation}"}
+            ],
+            response_format={ "type": "json_object" }
+        )
+        
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"G-Evaluation error: {e}")
+        return None
+
+def run_evaluation_batch(test_cases_by_scenario: Dict[str, List[Tuple[str, str]]]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Run batch G-Evaluation and generate reports by scenario"""
+    all_results = []
+    scenario_summaries = []
+    
+    for scenario, cases in test_cases_by_scenario.items():
+        scenario_results = []
+        
+        for query, recommendation in cases:
+            evaluation = g_evaluate(query, recommendation)
+            if evaluation:
+                result = {
+                    'scenario': scenario,
+                    'query': query,
+                    'recommendation': recommendation,
+                    **evaluation['scores'],
+                    'strengths': '; '.join(evaluation['analysis']['strengths']),
+                    'weaknesses': '; '.join(evaluation['analysis']['weaknesses']),
+                    'suggestions': '; '.join(evaluation['analysis']['suggestions'])
+                }
+                scenario_results.append(result)
+                all_results.append(result)
+        
+        # Calculate scenario averages
+        if scenario_results:
+            df_scenario = pd.DataFrame(scenario_results)
+            scenario_summary = {
+                'Scenario': scenario,
+                'Average Relevance': df_scenario['relevance'].mean(),
+                'Average Completeness': df_scenario['completeness'].mean(),
+                'Average Personalization': df_scenario['personalization'].mean(),
+                'Average Expertise': df_scenario['expertise'].mean(),
+                'Average Language': df_scenario['language'].mean(),
+                'Overall Average': df_scenario['average'].mean()
+            }
+            scenario_summaries.append(scenario_summary)
+    
+    return pd.DataFrame(all_results), pd.DataFrame(scenario_summaries)
+
+def main():
+    # Initialize index
+    index = initialize_index()
+    
+    # Read test cases by scenario
+    test_cases_by_scenario = read_test_cases_by_scenario('input_test.txt')
+    
+    # Organize test pairs by scenario
+    test_pairs_by_scenario = {}
+    results_by_scenario = {}
+    
+    for scenario, test_cases in test_cases_by_scenario.items():
+        test_pairs_by_scenario[scenario] = []
+        scenario_results = []
+        
+        for test_case in test_cases:
+            # Get first-round recommendation
+            top_matches, summary, flag = get_top_matches(test_case, "", index)
+            if top_matches:
+                sentiment = analyze_sentiment(test_case)
+                recommendation = generate_personalized_recommendation(summary, top_matches[0], sentiment)
+                test_pairs_by_scenario[scenario].append((test_case, recommendation))
+                
+                success, turns = run_test_case(test_case, index)
+                scenario_results.append({
+                    'query': test_case,
+                    'success': success,
+                    'turns': turns
+                })
+        
+        results_by_scenario[scenario] = scenario_results
+    
+    # Print results by scenario
+    print("\n=== Test Results by Scenario ===")
+    for scenario, results in results_by_scenario.items():
+        total_cases = len(results)
+        successful_cases = sum(1 for r in results if r['success'])
+        success_rate = (successful_cases / total_cases) * 100 if total_cases > 0 else 0
+        avg_turns = sum(r['turns'] for r in results) / total_cases if total_cases > 0 else 0
+        
+        print(f"\n{scenario}:")
+        print(f"Total cases: {total_cases}")
+        print(f"Success rate: {success_rate:.2f}%")
+        print(f"Average turns: {avg_turns:.2f}")
+    
+    # Run G-Evaluation
+    print("\n=== G-Evaluation Results ===")
+    detailed_results, scenario_summary = run_evaluation_batch(test_pairs_by_scenario)
+    
+    # Display scenario summary table
+    print("\nScenario Summary:")
+    print(scenario_summary.to_string(index=False))
+    
+    # Save results
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    detailed_results.to_csv(f'g_evaluation_detailed_{timestamp}.csv', index=False)
+    scenario_summary.to_csv(f'g_evaluation_summary_{timestamp}.csv', index=False)
+    
+    print(f"\nDetailed results saved to: g_evaluation_detailed_{timestamp}.csv")
+    print(f"Summary results saved to: g_evaluation_summary_{timestamp}.csv")
+
+if __name__ == "__main__":
+    main()

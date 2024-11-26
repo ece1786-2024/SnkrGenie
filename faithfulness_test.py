@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 from deepeval import evaluate
-from deepeval.metrics import FaithfulnessMetric
+from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
 from deepeval.test_case import LLMTestCase
 from LLama_index import initialize_index, get_top_matches
 
@@ -16,6 +16,7 @@ def main():
     # Organize test pairs by scenario
     test_pairs_by_scenario = {}
     results_by_scenario = {}
+    context_and_output = []  # For saving retrieval_context and actual_output
     
     for scenario, test_cases in test_cases_by_scenario.items():
         test_pairs_by_scenario[scenario] = []
@@ -24,7 +25,6 @@ def main():
         for test_case in test_cases:
             # Get first-round recommendation
             top_matches, summary, flag = get_top_matches(test_case, "", index)
-            print(index)
             if top_matches:
                 # Construct actual output and retrieval context
                 actual_output = "\n".join([
@@ -34,26 +34,48 @@ def main():
                     f"Name: {match['name']}, Description: {match['description']}" for match in top_matches
                 ]
                 
+                # Save retrieval_context and actual_output for each query
+                context_and_output.append({
+                    'scenario': scenario,
+                    'query': test_case,
+                    'actual_output': actual_output,
+                    'retrieval_context': "\n".join(retrieval_context)
+                })
+                
                 # Add test pair
                 test_pairs_by_scenario[scenario].append((test_case, actual_output, retrieval_context))
                 
-                # Evaluate test case using FaithfulnessMetric
+                # Evaluate test case using FaithfulnessMetric and AnswerRelevancyMetric
                 faithfulness_metric = FaithfulnessMetric(
                     threshold=0.7,
                     model="gpt-4",
                     include_reason=True
                 )
+                answerrelevancy_metric = AnswerRelevancyMetric(
+                    threshold=0.7,
+                    model="gpt-4",
+                    include_reason=True
+                )
+                
                 test_case_obj = LLMTestCase(
                     input=test_case,
                     actual_output=actual_output,
                     retrieval_context=retrieval_context
                 )
+                
+                # Measure Faithfulness
                 faithfulness_metric.measure(test_case_obj)
                 
+                # Measure Answer Relevancy
+                answerrelevancy_metric.measure(test_case_obj)
+                
+                # Append results
                 scenario_results.append({
                     'query': test_case,
                     'faithfulness_score': faithfulness_metric.score,
-                    'reason': faithfulness_metric.reason
+                    'faithfulness_reason': faithfulness_metric.reason,
+                    'answer_relevancy_score': answerrelevancy_metric.score,
+                    'answer_relevancy_reason': answerrelevancy_metric.reason
                 })
         
         results_by_scenario[scenario] = scenario_results
@@ -63,10 +85,12 @@ def main():
     for scenario, results in results_by_scenario.items():
         total_cases = len(results)
         avg_faithfulness = sum(r['faithfulness_score'] for r in results) / total_cases if total_cases > 0 else 0
+        avg_answer_relevancy = sum(r['answer_relevancy_score'] for r in results) / total_cases if total_cases > 0 else 0
         
         print(f"\n{scenario}:")
         print(f"Total cases: {total_cases}")
         print(f"Average Faithfulness Score: {avg_faithfulness:.2f}")
+        print(f"Average Answer Relevancy Score: {avg_answer_relevancy:.2f}")
     
     # Summarize and save results
     detailed_results = []
@@ -78,10 +102,16 @@ def main():
             })
     
     detailed_results_df = pd.DataFrame(detailed_results)
+    context_and_output_df = pd.DataFrame(context_and_output)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    detailed_results_df.to_csv(f'faithfulness_results_{timestamp}.csv', index=False)
     
-    print(f"\nDetailed results saved to: faithfulness_results_{timestamp}.csv")
+    # Save detailed results to CSV
+    detailed_results_df.to_csv(f'results_{timestamp}.csv', index=False)
+    print(f"\nDetailed results saved to: results_{timestamp}.csv")
+    
+    # Save retrieval_context and actual_output to a separate CSV
+    context_and_output_df.to_csv(f'context_output_{timestamp}.csv', index=False)
+    print(f"\nContext and output saved to: context_output_{timestamp}.csv")
 
 # Utility functions
 def read_test_cases_by_scenario(filename):
