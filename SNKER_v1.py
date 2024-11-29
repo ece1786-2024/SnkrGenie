@@ -17,11 +17,41 @@ system_prompt = (
     "5. Adjust your tone based on the user's tone, and make sure your response is more personable and human-like."
 )
 
+# def analyze_sentiment(user_input):
+#     """Analyze the sentiment of user input"""
+#     result = sentiment_analyzer(user_input)
+#     sentiment = result[0]['label']  # Output 'POS', 'NEG', or 'NEU'
+#     return sentiment
+
 def analyze_sentiment(user_input):
     """Analyze the sentiment of user input"""
-    result = sentiment_analyzer(user_input)
-    sentiment = result[0]['label']  # Output 'POS', 'NEG', or 'NEU'
-    return sentiment
+    try:
+        # 检查输入是否为空
+        if not user_input.strip():
+            print("Warning: Empty input received for sentiment analysis.")
+            return "NEU"  # 默认返回中性情感
+
+        # 调用 sentiment_analyzer 进行分析
+        result = sentiment_analyzer(user_input)
+
+        # 检查返回结果是否为空
+        if not result or len(result) == 0:
+            print("Warning: Sentiment analyzer returned an empty result.")
+            return "NEU"  # 默认返回中性情感
+
+        # 返回分析结果
+        sentiment = result[0]['label']  # 提取 'POS', 'NEG', 或 'NEU'
+        return sentiment
+
+    except IndexError as e:
+        print(f"IndexError: Result index out of range for input: {user_input}")
+        print(f"Error details: {e}")
+        return "NEU"  # 默认返回中性情感
+
+    except Exception as e:
+        print(f"Unexpected error during sentiment analysis for input: {user_input}")
+        print(f"Error details: {e}")
+        return "NEU"  # 默认返回中性情感
 
 def generate_personalized_recommendation(user_input, sneaker_info, sentiment):
     """Generate personalized recommendation using GPT-4"""
