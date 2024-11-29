@@ -1,0 +1,48 @@
+# Activity/Purpose Based
+1. I need something comfortable for walking around the city all day
+2. Looking for shoes that I can wear both at the gym and casual outings
+3. Need something for my daily morning jogs
+
+# Style/Appearance Based
+1. I want something that looks vintage but still modern
+2. Looking for sneakers that aren't too flashy but still stylish
+3. Want some cool streetwear vibes in my shoes
+
+# Comfort/Experience Based
+1. My feet hurt after long walks, need something supportive
+2. Want something light and breathable for summer
+3. Need shoes that don't make my feet sweaty
+
+# Occasion Based
+1. Need sneakers I can wear to work but also look cool
+2. Want something suitable for both indoor and outdoor activities
+3. Looking for shoes I can wear to casual parties
+
+# Mixed Requirements
+1. Want something comfortable but also looks good with jeans
+2. Need breathable shoes for summer that aren't too sporty looking
+3. Looking for stylish sneakers that I can also use for light exercise
+
+# Specific Problem Based
+1. I have flat feet, need something comfortable
+2. My ankles usually hurt when walking, need good support
+3. Want something that won't make my feet tired during long shifts
+
+# Brand Impression Based
+1. I like Nike style but want something different
+2. Want something that looks like Yeezys but more affordable
+    -If you're looking for a footwear option that captures the aesthetic appeal of Yeezys while being mindful of affordability, 
+    the adidas Yeezy Slides 'Flax' could be an excellent match for you. With a sleek, minimalist design, 
+    these slides offer the stylish look reminiscent of the Yeezy brand, but in a more accessible price range.
+    The slides feature a monochrome dark beige hue that not only aligns with the Yeezy aesthetic but also makes them versatile for various outfits and occasions. 
+    Their molded one-piece construction is made of injected EVA, ensuring they are lightweight and durable. This material provides natural cushioning, offering a smooth and comfortable ride whether you're at home or out running errands.
+    Moreover, the outsole is designed with horizontal grooves for optimal traction and impact protection. 
+    This feature enhances the overall comfort and stability, making these slides a practical choice for everyday wear. 
+    With their combination of style, comfort, and functionality, the adidas Yeezy Slides 'Flax' are a great option for anyone seeking a Yeezy-like look without compromising on budget.
+    考虑用户输入的多样性，如果遇到跟价格有关的需求（more affordable），将dataset中价格的weight调高一点（dynamic adjusting weights?）
+3. Looking for classic sneaker vibes but modern comfort
+
+# Weather/Season Based
+1. Need something good for rainy weather but still looks nice
+2. Want comfortable sneakers for hot summer days
+3. Looking for something suitable for spring weather
