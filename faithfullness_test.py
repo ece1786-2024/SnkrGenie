@@ -119,7 +119,7 @@ def read_test_cases_by_scenario(filename):
     scenarios = {}
     current_scenario = None
     
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         for line in file:
             line = line.strip()
             if not line:
