@@ -69,7 +69,7 @@ This CSV file contains the results of the faithfulness evaluation, including sco
 ### Running Evaluations
 
 #### Faithfulness Test
-Run `faithfulness_test.py` to generate:
+Run `faithfullness_test.py` to generate:
 - `faithfulness_results.csv`: Detailed faithfulness scores
 - `context_output_{timestamp}.csv`: Context-output pairs
 
