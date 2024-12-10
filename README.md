@@ -55,13 +55,11 @@ This CSV file contains the results of the faithfulness evaluation, including sco
 - Similarity-based Product Matching
 
 ### Recommendation Generator (SNKER_v1.py)
-- User Sentiment Analysis
-- Personalized Copy Generation
-- Content Expression Optimization
+- Personalized Message Generation
 
 ## Usage Guide
 ### Running the System
-1. Install required packages for each python file, see imports in each file.
+1. Install the required packages for each Python and notebook file, see imports in each file.
 2. Fill in the API keys for each file.
 3. Launch main program: `python main.py`
    - Starts the GUI interface
