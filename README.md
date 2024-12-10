@@ -21,13 +21,13 @@ This file contains detailed evaluation results for each test case, including spe
 A Jupyter Notebook used for performance testing of the recommendation system. It includes code for initializing the system, running test cases, and evaluating results.
 
 ### LLama_index.py
-This file contains functions for initializing the index, extracting preferences using GPT-4, and retrieving top sneaker matches based on user queries.
+This file contains functions for initializing the index, extracting preferences using GPT-4o, and retrieving top sneaker matches based on user queries.
 
 ### SNKER_v1.py
-This file includes functions for sentiment analysis and generating personalized sneaker recommendations using OpenAI's GPT-4 model.
+This file includes functions for sentiment analysis and generating personalized sneaker recommendations using OpenAI's GPT-4o model.
 
 ### input_test.txt
-A text file containing test cases grouped by different scenarios, such as activity, style, comfort, occasion, and brand impression, used for evaluating the recommendation system.
+A text file containing test cases grouped by different scenarios, used for evaluating the recommendation system.
 
 ### faithfullness_test.py
 This script is used to evaluate the faithfulness of the recommendation system's outputs against the retrieval context, using metrics like faithfulness and answer relevancy.
